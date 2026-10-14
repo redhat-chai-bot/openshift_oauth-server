@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -21,6 +20,7 @@ import (
 
 	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/osinserver/registrystorage"
+	"github.com/openshift/oauth-server/pkg/server/assets"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
 )
 
@@ -144,12 +144,11 @@ func (t *tokenRequest) displayTokenPost(osinOAuthClient *osincli.Client, w http.
 	}
 
 	data.AccessToken = accessData.AccessToken
-	data.AccessTokenJSStr = template.JSStr(data.AccessToken)
-	data.PublicMasterURLJSStr = template.JSStr(data.PublicMasterURL)
 	renderToken(w, data)
 }
 
 func displayTokenStart(osinOAuthClient *osincli.Client, w http.ResponseWriter, req *http.Request, data *sharedData) (*osincli.AuthorizeData, bool) {
+	assets.SetBuiltinHTMLHeaders(w)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
 	requestURL := oauthdiscovery.OpenShiftOAuthTokenRequestURL("") // relative url to token request endpoint
@@ -166,7 +165,8 @@ func displayTokenStart(osinOAuthClient *osincli.Client, w http.ResponseWriter, r
 	return authorizeData, true
 }
 
-func renderToken(w io.Writer, data tokenData) {
+func renderToken(w http.ResponseWriter, data tokenData) {
+	assets.SetBuiltinHTMLHeaders(w)
 	if err := tokenTemplate.Execute(w, data); err != nil {
 		utilruntime.HandleError(fmt.Errorf("unable to render token template: %v", err))
 	}
@@ -180,11 +180,9 @@ type sharedData struct {
 type tokenData struct {
 	sharedData
 
-	AccessToken          string
-	AccessTokenJSStr     template.JSStr
-	PublicMasterURL      string
-	PublicMasterURLJSStr template.JSStr
-	LogoutURL            string
+	AccessToken     string
+	PublicMasterURL string
+	LogoutURL       string
 }
 
 func getBaseURL(req *http.Request) (*url.URL, error) {
@@ -204,7 +202,8 @@ type formData struct {
 	CSRF   string
 }
 
-func renderForm(w io.Writer, data formData) {
+func renderForm(w http.ResponseWriter, data formData) {
+	assets.SetBuiltinHTMLHeaders(w)
 	if err := formTemplate.Execute(w, data); err != nil {
 		utilruntime.HandleError(fmt.Errorf("unable to render form template: %v", err))
 	}
@@ -236,54 +235,8 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
 {{ if .Error }}
   {{ .Error }}
 {{ else }}
-  <script>
-    function codeSnippet(e, textBlocks = []) {
-      const snippetString = textBlocks.join(' ').trim();
-
-      const snippetHTML = textBlocks
-        .map((text) => {
-          const span = document.createElement('span');
-          span.className = 'nowrap';
-          span.innerText = text;
-          return span.outerHTML;
-        })
-        .join(' ');
-
-      const copyButton = document.createElement('button');
-      copyButton.innerText = 'Copy';
-
-      const resetCopyButton = () => {
-        copyButton.innerText = 'Copy';
-        copyButton.disabled = false;
-      };
-
-      copyButton.onclick = () => {
-        copyButton.disabled = true;
-        navigator.clipboard.writeText(snippetString)
-          .then(() => {
-            copyButton.innerText = 'Copied!';
-            setTimeout(resetCopyButton, 3000);
-          })
-          .catch((error) => {
-            copyButton.innerText = 'Error!';
-            setTimeout(resetCopyButton, 3000);
-            console.error('Failed to copy snippet to clipboard', error);
-          });
-      };
-
-      const showButton = document.createElement('button');
-      showButton.innerText = 'Show';
-
-      showButton.onclick = () => {
-        e.innerHTML = snippetHTML;
-        e.appendChild(copyButton);
-      };
-
-      e.innerHTML = '***';
-      e.appendChild(copyButton);
-      e.appendChild(showButton);
-    }
-  </script>
+  <div id="token-data" hidden data-access-token="{{.AccessToken}}" data-server="{{.PublicMasterURL}}"></div>
+  <script src="/oauth/assets/v1/token.js" defer></script>
 
   <h2>Your API token is</h2>
   <pre id="token"></pre>
@@ -293,24 +246,6 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
 
   <h3>Use this token directly against the API</h3>
   <pre id="apiCall"></pre>
-
-  <script>
-    codeSnippet(document.getElementById('token'), [
-      '{{.AccessTokenJSStr}}',
-    ]);
-
-    codeSnippet(document.getElementById('login'), [
-      'oc login',
-      '--token={{.AccessTokenJSStr}}',
-      '--server={{.PublicMasterURLJSStr}}',
-    ]);
-
-    codeSnippet(document.getElementById('apiCall'), [
-      'curl',
-      '-H "Authorization: Bearer {{.AccessTokenJSStr}}"',
-      '"{{.PublicMasterURLJSStr}}/apis/user.openshift.io/v1/users/~"',
-    ]);
-  </script>
 {{ end }}
 
 <br><br>

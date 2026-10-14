@@ -65,6 +65,7 @@ import (
 	"github.com/openshift/oauth-server/pkg/oauth/registry"
 	"github.com/openshift/oauth-server/pkg/osinserver"
 	"github.com/openshift/oauth-server/pkg/osinserver/registrystorage"
+	"github.com/openshift/oauth-server/pkg/server/assets"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
 	"github.com/openshift/oauth-server/pkg/server/errorpage"
 	"github.com/openshift/oauth-server/pkg/server/grant"
@@ -87,6 +88,7 @@ const (
 // passing through all other requests to the given handler.
 func (c *OAuthServerConfig) WithOAuth(handler http.Handler) (http.Handler, error) {
 	mux := http.NewServeMux()
+	assets.Install(mux)
 
 	// pass through all other requests
 	mux.Handle("/", handler)

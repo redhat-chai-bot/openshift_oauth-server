@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/library-go/pkg/apiserver/httprequest"
 
+	"github.com/openshift/oauth-server/pkg/server/assets"
 	"github.com/openshift/oauth-server/pkg/server/locales"
 )
 
@@ -92,6 +93,9 @@ func NewErrorPageTemplateRenderer(templateFile string) (ErrorPageRenderer, error
 }
 
 func (r *errorPageTemplateRenderer) Render(data ErrorData, w http.ResponseWriter, req *http.Request) {
+	if r.errorPageTemplate == defaultErrorPageTemplate {
+		assets.SetBuiltinHTMLHeaders(w)
+	}
 	w.Header().Add("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	data.Locale = locales.GetLocale(req.Header.Get("Accept-Language"))

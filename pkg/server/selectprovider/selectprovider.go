@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
+	"github.com/openshift/oauth-server/pkg/server/assets"
 	"github.com/openshift/oauth-server/pkg/server/locales"
 )
 
@@ -108,6 +109,9 @@ type selectProviderTemplateRenderer struct {
 }
 
 func (r selectProviderTemplateRenderer) Render(providers []api.ProviderInfo, w http.ResponseWriter, req *http.Request) {
+	if r.selectProviderTemplate == defaultSelectProviderTemplate {
+		assets.SetBuiltinHTMLHeaders(w)
+	}
 	w.Header().Add("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	locale := locales.GetLocale(req.Header.Get("Accept-Language"))

@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	metrics "github.com/openshift/oauth-server/pkg/prometheus"
+	"github.com/openshift/oauth-server/pkg/server/assets"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
 	"github.com/openshift/oauth-server/pkg/server/errorpage"
 	"github.com/openshift/oauth-server/pkg/server/locales"
@@ -278,6 +279,9 @@ type loginTemplateRenderer struct {
 }
 
 func (r loginTemplateRenderer) Render(form LoginForm, w http.ResponseWriter, req *http.Request) {
+	if r.loginTemplate == defaultLoginTemplate {
+		assets.SetBuiltinHTMLHeaders(w)
+	}
 	w.Header().Add("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	if err := r.loginTemplate.Execute(w, form); err != nil {
