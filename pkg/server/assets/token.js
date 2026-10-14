@@ -28,7 +28,6 @@ function codeSnippet(element, textBlocks = []) {
       .catch(() => {
         copyButton.innerText = 'Error!';
         setTimeout(resetCopyButton, 3000);
-
       });
   };
 

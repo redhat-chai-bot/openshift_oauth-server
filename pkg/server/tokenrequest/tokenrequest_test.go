@@ -1,13 +1,13 @@
 package tokenrequest
 
 import (
+	"html"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/openshift/oauth-server/pkg/server/assets"
-	"html"
-	"regexp"
 )
 
 func TestTokenDataEscaping(t *testing.T) {

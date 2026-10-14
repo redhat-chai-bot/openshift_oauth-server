@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/openshift/oauth-server/pkg/server/locales"
 	"github.com/openshift/oauth-server/pkg/server/login"
 	"github.com/openshift/oauth-server/pkg/server/selectprovider"
-	"regexp"
 )
 
 func TestScripts(t *testing.T) {
@@ -130,6 +130,14 @@ func TestRenderersBuiltinAndCustom(t *testing.T) {
 				}
 
 				body := response.Body.String()
+				for _, class := range []string{"pf-v6-theme-dark", "pf-v6-theme-high-contrast"} {
+					if !strings.Contains(body, "."+class) {
+						t.Fatalf("missing generated CSS for %s", class)
+					}
+				}
+				if renderer.name == "login" && !strings.Contains(body, ".pf-m-in-progress") {
+					t.Fatal("missing login progress CSS")
+				}
 				scripts := regexp.MustCompile(`<script\b([^>]*)>([\s\S]*?)</script>`).FindAllStringSubmatch(body, -1)
 				if len(scripts) != renderer.scripts {
 					t.Fatalf("scripts %d, want %d", len(scripts), renderer.scripts)
